@@ -1,13 +1,30 @@
 "use client";
 
 import { useEveAgent } from "eve/react";
-import { CheckCircle2, Clock3, Loader2, SendHorizonal, XCircle } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { ArrowUp, CheckCircle2, Clock3, Loader2, XCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupTextarea,
+} from "@/components/ui/input-group";
+import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker";
+import { Message, MessageAvatar, MessageContent } from "@/components/ui/message";
+import {
+  MessageScroller,
+  MessageScrollerButton,
+  MessageScrollerContent,
+  MessageScrollerItem,
+  MessageScrollerProvider,
+  MessageScrollerViewport,
+} from "@/components/ui/message-scroller";
 import { Progress } from "@/components/ui/progress";
-import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 type Turn = {
   id: string;
@@ -38,7 +55,6 @@ export function RespondentChat({ token, survey }: { token: string; survey: Publi
   const [complete, setComplete] = useState(false);
   const [pending, setPending] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function start() {
@@ -56,10 +72,6 @@ export function RespondentChat({ token, survey }: { token: string; survey: Publi
     }
     start();
   }, [token]);
-
-  useEffect(() => {
-    logRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [turns]);
 
   async function send(content = message) {
     if (!responseId || !content.trim() || pending || complete) return;
@@ -85,123 +97,171 @@ export function RespondentChat({ token, survey }: { token: string; survey: Publi
     }
   }
 
+  const isBusy = pending && turns.length > 0;
+
   return (
-    <main
-      className="grid min-h-screen grid-rows-[auto_1fr_auto] bg-background text-foreground"
-      data-eve-status={eveAgent.status}
-    >
-      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="truncate text-sm font-semibold">{survey.brand}</span>
-              <Badge variant={complete ? "secondary" : "outline"} className="hidden sm:inline-flex">
-                {complete ? "Completed" : "In progress"}
-              </Badge>
-            </div>
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">{survey.title}</p>
-          </div>
-          <div className="grid w-36 shrink-0 gap-1.5 sm:w-48">
-            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1">
-                <Clock3 className="size-3.5" />
-                {survey.estimatedMinutes} min
-              </span>
-              <span>{progress}%</span>
-            </div>
-            <Progress value={progress} aria-label="Survey progress" />
-          </div>
-        </div>
-      </header>
-
-      <section className="overflow-y-auto">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 sm:px-6">
-          {turns.map((turn) => {
-            const isRespondent = turn.role === "respondent";
-            return (
-              <article
-                className={cn("flex items-end gap-2", isRespondent ? "justify-end" : "justify-start")}
-                key={turn.id}
-              >
-                {!isRespondent ? (
-                  <div className="mb-1 flex size-7 shrink-0 items-center justify-center rounded-2xl bg-secondary text-xs font-semibold text-secondary-foreground">
-                    AI
-                  </div>
-                ) : null}
-                <div
-                  className={cn(
-                    "max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm sm:max-w-[72%]",
-                    isRespondent
-                      ? "bg-primary text-primary-foreground"
-                      : "border bg-card text-card-foreground"
-                  )}
-                >
-                  {turn.content}
-                </div>
-              </article>
-            );
-          })}
-
-          {pending ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" />
-              <span>Thinking</span>
-            </div>
-          ) : null}
-
-          {error ? (
-            <div className="flex items-start gap-2 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              <XCircle className="mt-0.5 size-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          ) : null}
-
-          {complete ? (
-            <div className="flex items-center justify-center gap-2 rounded-2xl border bg-secondary px-4 py-3 text-sm text-secondary-foreground">
-              <CheckCircle2 className="size-4" />
-              <span>Thanks, your response was saved.</span>
-            </div>
-          ) : null}
-
-          <div ref={logRef} />
-        </div>
-      </section>
-
-      <form
-        className="border-t bg-background/95 px-4 py-3 backdrop-blur sm:px-6"
-        onSubmit={(event) => {
-          event.preventDefault();
-          send();
-        }}
+    <MessageScrollerProvider>
+      <main
+        className="grid min-h-screen grid-rows-[auto_1fr_auto] bg-background text-foreground"
+        data-eve-status={eveAgent.status}
       >
-        <div className="mx-auto grid w-full max-w-3xl gap-3">
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" type="button" onClick={() => send("No se")} disabled={pending || complete}>
-              No se
-            </Button>
-            <Button variant="outline" size="sm" type="button" onClick={() => send("Saltar")} disabled={pending || complete}>
-              Saltar
-            </Button>
-            <Button variant="outline" size="sm" type="button" onClick={() => send("Terminar")} disabled={pending || complete}>
-              Terminar
-            </Button>
+        <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+          <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="truncate text-sm font-semibold">{survey.brand}</span>
+                <Badge variant={complete ? "secondary" : "outline"} className="hidden sm:inline-flex">
+                  {complete ? "Completed" : "In progress"}
+                </Badge>
+              </div>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">{survey.title}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="grid w-36 shrink-0 gap-1.5 sm:w-48">
+                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1">
+                    <Clock3 className="size-3.5" />
+                    {survey.estimatedMinutes} min
+                  </span>
+                  <span>{progress}%</span>
+                </div>
+                <Progress value={progress} aria-label="Survey progress" />
+              </div>
+              <ThemeToggle />
+            </div>
           </div>
-          <div className="grid gap-2 rounded-3xl border bg-card p-2 shadow-sm sm:grid-cols-[1fr_auto]">
-            <Textarea
-              aria-label="Response"
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              placeholder={complete ? "Gracias por responder." : "Escribi una respuesta corta..."}
-              disabled={pending || complete}
-              className="min-h-14 border-transparent bg-transparent px-3 py-2 shadow-none focus-visible:ring-0"
-            />
-            <Button size="lg" type="submit" disabled={pending || complete || !message.trim()} className="self-end">
-              {pending ? <Loader2 className="size-4 animate-spin" /> : <SendHorizonal className="size-4" />}
-              Send
-            </Button>
+        </header>
+
+        <MessageScroller className="min-h-0">
+          <MessageScrollerViewport>
+            <MessageScrollerContent
+              aria-busy={isBusy}
+              className="mx-auto w-full max-w-3xl gap-4 px-4 py-6 sm:px-6"
+            >
+              {turns.map((turn) => {
+                if (turn.role === "system") {
+                  return (
+                    <MessageScrollerItem key={turn.id}>
+                      <Marker variant="separator">
+                        <MarkerContent>{turn.content}</MarkerContent>
+                      </Marker>
+                    </MessageScrollerItem>
+                  );
+                }
+
+                const isRespondent = turn.role === "respondent";
+                return (
+                  <MessageScrollerItem key={turn.id} scrollAnchor={isRespondent}>
+                    <Message align={isRespondent ? "end" : "start"}>
+                      {!isRespondent ? (
+                        <MessageAvatar>
+                          <Avatar size="sm">
+                            <AvatarFallback>AI</AvatarFallback>
+                          </Avatar>
+                        </MessageAvatar>
+                      ) : null}
+                      <MessageContent>
+                        <Bubble variant={isRespondent ? "default" : "outline"} align={isRespondent ? "end" : "start"}>
+                          <BubbleContent>{turn.content}</BubbleContent>
+                        </Bubble>
+                      </MessageContent>
+                    </Message>
+                  </MessageScrollerItem>
+                );
+              })}
+
+              {pending && turns.length > 0 ? (
+                <MessageScrollerItem>
+                  <Marker>
+                    <MarkerIcon>
+                      <Loader2 className="size-4 animate-spin" />
+                    </MarkerIcon>
+                    <MarkerContent className="shimmer">Thinking&hellip;</MarkerContent>
+                  </Marker>
+                </MessageScrollerItem>
+              ) : null}
+
+              {error ? (
+                <MessageScrollerItem>
+                  <Marker variant="border" className="text-destructive">
+                    <MarkerIcon>
+                      <XCircle className="size-4" />
+                    </MarkerIcon>
+                    <MarkerContent>{error}</MarkerContent>
+                  </Marker>
+                </MessageScrollerItem>
+              ) : null}
+
+              {complete ? (
+                <MessageScrollerItem>
+                  <Marker variant="border">
+                    <MarkerIcon>
+                      <CheckCircle2 className="size-4" />
+                    </MarkerIcon>
+                    <MarkerContent>Thanks, your response was saved.</MarkerContent>
+                  </Marker>
+                </MessageScrollerItem>
+              ) : null}
+            </MessageScrollerContent>
+          </MessageScrollerViewport>
+          <MessageScrollerButton />
+        </MessageScroller>
+
+        <form
+          className="border-t bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-6"
+          onSubmit={(event) => {
+            event.preventDefault();
+            send();
+          }}
+        >
+          <div className="mx-auto grid w-full max-w-3xl gap-3">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" type="button" onClick={() => send("No se")} disabled={pending || complete}>
+                No se
+              </Button>
+              <Button variant="outline" size="sm" type="button" onClick={() => send("Saltar")} disabled={pending || complete}>
+                Saltar
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => send("Terminar")}
+                disabled={pending || complete}
+              >
+                Terminar
+              </Button>
+            </div>
+            <InputGroup className="h-auto rounded-3xl bg-card shadow-sm">
+              <InputGroupTextarea
+                aria-label="Response"
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+                placeholder={complete ? "Gracias por responder." : "Escribi una respuesta corta..."}
+                disabled={pending || complete}
+                className="min-h-14 px-3 py-2.5"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    send();
+                  }
+                }}
+              />
+              <InputGroupAddon align="block-end" className="justify-end px-2 pb-2">
+                <InputGroupButton
+                  type="submit"
+                  variant="default"
+                  size="icon-sm"
+                  disabled={pending || complete || !message.trim()}
+                  aria-label="Send message"
+                >
+                  {pending ? <Loader2 className="size-4 animate-spin" /> : <ArrowUp className="size-4" />}
+                </InputGroupButton>
+              </InputGroupAddon>
+            </InputGroup>
           </div>
-        </div>
-      </form>
-    </main>
+        </form>
+      </main>
+    </MessageScrollerProvider>
   );
 }
