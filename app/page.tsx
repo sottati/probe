@@ -1,126 +1,88 @@
 import Link from "next/link";
-import { AppChrome } from "@/components/AppChrome";
-import { CreditTopUp } from "@/components/CreditTopUp";
-import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { readDb } from "@/lib/store";
+import { isAuthenticated } from "@/lib/session";
 
-export const dynamic = "force-dynamic";
+const features = [
+  {
+    label: "01",
+    title: "Conversational",
+    description: "AI-guided interviews that feel natural, not like a form.",
+  },
+  {
+    label: "02",
+    title: "Structured output",
+    description: "Every response is extracted into fields you define upfront.",
+  },
+  {
+    label: "03",
+    title: "Share anywhere",
+    description: "Publish a link. Respondents don't need an account.",
+  },
+] as const;
 
-export default async function DashboardPage() {
-  const db = await readDb();
-  const workspace = db.workspaces[0];
-  const completed = db.responses.filter((response) => response.status === "completed").length;
-  const total = db.responses.length;
-  const totalCost = db.aiUsageEvents.reduce((sum, event) => sum + event.creditDebitUsd, 0);
-  const avgCost = completed > 0 ? totalCost / completed : 0;
+export default async function LandingPage() {
+  const authed = await isAuthenticated();
 
   return (
-    <AppChrome>
-      <section className="mb-8 space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Research dashboard</h1>
-        <p className="text-muted-foreground">
-          Create conversational surveys, share public links, and review structured responses.
-        </p>
-      </section>
+    <main className="min-h-screen bg-background text-foreground">
+      <header className="flex items-center justify-between px-6 py-5 sm:px-10">
+        <span className="text-sm font-medium tracking-tight">probe</span>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          {authed ? (
+            <Button size="sm" render={<Link href="/dashboard" />}>
+              Dashboard
+            </Button>
+          ) : (
+            <Button size="sm" variant="outline" render={<Link href="/login" />}>
+              Sign in
+            </Button>
+          )}
+        </div>
+      </header>
 
-      <section className="mb-8 grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Credits remaining</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold">${workspace.creditBalanceUsd.toFixed(2)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Completion rate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold">{total > 0 ? `${Math.round((completed / total) * 100)}%` : "0%"}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Avg. cost per completed response
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold">${avgCost.toFixed(4)}</p>
-          </CardContent>
-        </Card>
-      </section>
+      <div className="mx-auto flex max-w-2xl flex-col px-6 pb-24 pt-16 sm:px-10 sm:pt-24">
+        <section className="space-y-6">
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">probe</h1>
+          <p className="text-lg text-muted-foreground sm:text-xl">
+            Conversational surveys guided by AI.
+          </p>
+          <p className="max-w-lg text-muted-foreground">
+            Define what you want to learn. Share a link. Get structured research responses — without
+            building another static form.
+          </p>
+          <div className="flex flex-wrap gap-3 pt-2">
+            <Button render={<Link href={authed ? "/surveys/new" : "/login?next=/surveys/new"} />}>
+              {authed ? "New survey" : "Get started"}
+            </Button>
+            {authed ? (
+              <Button variant="outline" render={<Link href="/dashboard" />}>
+                Open dashboard
+              </Button>
+            ) : null}
+          </div>
+        </section>
 
-      <section className="mb-8">
-        <CreditTopUp />
-      </section>
+        <section className="mt-24 space-y-10 border-t pt-16">
+          {features.map((feature) => (
+            <article key={feature.label} className="space-y-2">
+              <p className="font-mono text-xs text-muted-foreground">{feature.label}</p>
+              <h2 className="text-lg font-medium">{feature.title}</h2>
+              <p className="text-sm text-muted-foreground">{feature.description}</p>
+            </article>
+          ))}
+        </section>
 
-      <Card>
-        <CardContent className="pt-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Survey</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Responses</TableHead>
-                <TableHead>Public link</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {db.surveys.map((survey) => {
-                const responses = db.responses.filter((response) => response.surveyId === survey.id);
-                return (
-                  <TableRow key={survey.id}>
-                    <TableCell>
-                      <div className="font-medium">{survey.title}</div>
-                      <div className="text-sm text-muted-foreground">{survey.spec.goal}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={survey.status === "published" ? "default" : "secondary"}>
-                        {survey.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{responses.length}</TableCell>
-                    <TableCell>
-                      {survey.publicToken ? (
-                        <Link className="text-sm underline-offset-4 hover:underline" href={`/r/${survey.publicToken}`}>
-                          /r/{survey.publicToken}
-                        </Link>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">Not published</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="outline" size="sm" render={<Link href={`/surveys/${survey.id}`} />}>
-                        Open
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-              {db.surveys.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    No surveys yet.
-                  </TableCell>
-                </TableRow>
-              ) : null}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </AppChrome>
+        <section className="mt-24 border-t pt-16">
+          <p className="text-sm text-muted-foreground">
+            Ready to run your first interview?
+          </p>
+          <Button className="mt-4" render={<Link href={authed ? "/surveys/new" : "/login"} />}>
+            {authed ? "Create a survey" : "Sign in to start"}
+          </Button>
+        </section>
+      </div>
+    </main>
   );
 }

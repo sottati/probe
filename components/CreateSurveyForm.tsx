@@ -19,13 +19,20 @@ export function CreateSurveyForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [estimatedMinutes, setEstimatedMinutes] = useState("5");
-  const [tone, setTone] = useState("professional");
+  const [estimatedMinutes, setEstimatedMinutes] = useState<string | null>(null);
+  const [tone, setTone] = useState<string | null>(null);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPending(true);
     setError(null);
+
+    if (!estimatedMinutes || !tone) {
+      setPending(false);
+      setError("Select a duration and tone before creating the survey.");
+      return;
+    }
+
     const form = new FormData(event.currentTarget);
     const body = {
       ...Object.fromEntries(form.entries()),
@@ -50,44 +57,41 @@ export function CreateSurveyForm() {
     <form className="grid gap-6 sm:grid-cols-2" onSubmit={onSubmit}>
       <div className="grid gap-2">
         <Label htmlFor="title">Survey name</Label>
-        <Input id="title" name="title" defaultValue="Trial activation interview" required />
+        <Input id="title" name="title" placeholder="Trial activation interview" required />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="brand">Brand</Label>
-        <Input id="brand" name="brand" defaultValue="Beacon" required />
+        <Input id="brand" name="brand" placeholder="Your company or product name" required />
       </div>
       <div className="grid gap-2 sm:col-span-2">
         <Label htmlFor="goal">What do you want to learn?</Label>
         <Textarea
           id="goal"
           name="goal"
-          defaultValue="understand why trial users did not activate the Team Dashboard feature"
+          placeholder="Understand why trial users did not activate a key feature"
           required
         />
       </div>
       <div className="grid gap-2 sm:col-span-2">
         <Label htmlFor="audience">Audience</Label>
-        <Input id="audience" name="audience" defaultValue="B2B SaaS trial users" required />
+        <Input id="audience" name="audience" placeholder="B2B SaaS trial users" required />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="mustCaptureText">Required fields</Label>
         <Textarea
           id="mustCaptureText"
           name="mustCaptureText"
-          defaultValue={[
-            "Respondent role",
-            "Intended use case",
-            "Activation blocker",
-            "Moment of friction",
-            "Current alternative",
-            "Reactivation trigger",
-          ].join("\n")}
+          placeholder={"Respondent role\nIntended use case\nActivation blocker"}
           required
         />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="optionalProbesText">Optional probes</Label>
-        <Textarea id="optionalProbesText" name="optionalProbesText" defaultValue={"Stakeholders\nUrgency"} />
+        <Textarea
+          id="optionalProbesText"
+          name="optionalProbesText"
+          placeholder={"Stakeholders\nUrgency"}
+        />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="estimatedMinutes">Duration</Label>
@@ -96,7 +100,7 @@ export function CreateSurveyForm() {
           onValueChange={(value) => value && setEstimatedMinutes(value)}
         >
           <SelectTrigger id="estimatedMinutes" className="w-full">
-            <SelectValue />
+            <SelectValue placeholder="Select duration" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="3">3 minutes</SelectItem>
@@ -109,7 +113,7 @@ export function CreateSurveyForm() {
         <Label htmlFor="tone">Tone</Label>
         <Select value={tone} onValueChange={(value) => value && setTone(value)}>
           <SelectTrigger id="tone" className="w-full">
-            <SelectValue />
+            <SelectValue placeholder="Select tone" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="professional">Professional</SelectItem>
