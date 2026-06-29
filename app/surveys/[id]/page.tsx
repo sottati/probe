@@ -2,6 +2,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppChrome } from "@/components/AppChrome";
 import { PublishButton } from "@/components/PublishButton";
+import { Badge } from "@/components/ui/badge";
+import { Bubble, BubbleContent } from "@/components/ui/bubble";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Message, MessageContent } from "@/components/ui/message";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { previewQuestions } from "@/lib/survey-spec";
 import { getSurveyById, readDb } from "@/lib/store";
 
@@ -23,109 +36,144 @@ export default async function SurveyPage({ params }: { params: Promise<{ id: str
 
   return (
     <AppChrome>
-      <section className="section" style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
-        <div>
-          <h1>{survey.title}</h1>
-          <p className="muted">{survey.spec.goal}</p>
+      <section className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight">{survey.title}</h1>
+            <Badge variant={survey.status === "published" ? "default" : "secondary"}>{survey.status}</Badge>
+          </div>
+          <p className="text-muted-foreground">{survey.spec.goal}</p>
         </div>
-        <div className="nav">
+        <div className="flex flex-wrap items-center gap-2">
           {survey.status === "draft" ? <PublishButton surveyId={survey.id} /> : null}
           {survey.publicToken ? (
-            <Link className="button primary" href={`/r/${survey.publicToken}`}>
-              Open public link
-            </Link>
+            <Button render={<Link href={`/r/${survey.publicToken}`} />}>Open public link</Button>
           ) : null}
         </div>
       </section>
 
-      <section className="grid grid-3 section">
-        <div className="panel metric">
-          <span>Responses started</span>
-          <strong>{responses.length}</strong>
-        </div>
-        <div className="panel metric">
-          <span>Responses completed</span>
-          <strong>{completed.length}</strong>
-        </div>
-        <div className="panel metric">
-          <span>Credits used</span>
-          <strong>${cost.toFixed(4)}</strong>
-        </div>
+      <section className="mb-8 grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Responses started</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-semibold">{responses.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Responses completed</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-semibold">{completed.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Credits used</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-semibold">${cost.toFixed(4)}</p>
+          </CardContent>
+        </Card>
       </section>
 
-      <section className="grid grid-2 section">
-        <div className="panel panel-pad">
-          <h2>SurveySpec</h2>
-          <p>
-            <strong>Audience:</strong> {survey.spec.audience}
-          </p>
-          <p>
-            <strong>Duration:</strong> {survey.spec.estimatedMinutes} minutes, {survey.spec.maxTurns} turns max
-          </p>
-          <p>
-            <strong>Tone:</strong> {survey.spec.tone}
-          </p>
-          <h3>Required capture</h3>
-          <ul>
-            {survey.spec.mustCapture.map((field) => (
-              <li key={field.id}>{field.label}</li>
-            ))}
-          </ul>
-        </div>
-        <div className="panel panel-pad">
-          <h2>Conversation preview</h2>
-          {previewQuestions(survey.spec).map((question) => (
-            <p className="bubble" key={question}>
-              {question}
+      <section className="mb-8 grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>SurveySpec</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p>
+              <strong>Audience:</strong> {survey.spec.audience}
             </p>
-          ))}
-        </div>
+            <p>
+              <strong>Duration:</strong> {survey.spec.estimatedMinutes} minutes, {survey.spec.maxTurns} turns max
+            </p>
+            <p>
+              <strong>Tone:</strong> {survey.spec.tone}
+            </p>
+            <div>
+              <strong>Required capture</strong>
+              <ul className="mt-2 list-inside list-disc space-y-1 text-muted-foreground">
+                {survey.spec.mustCapture.map((field) => (
+                  <li key={field.id}>{field.label}</li>
+                ))}
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Conversation preview</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {previewQuestions(survey.spec).map((question) => (
+              <Message key={question} align="start">
+                <MessageContent>
+                  <Bubble variant="outline">
+                    <BubbleContent>{question}</BubbleContent>
+                  </Bubble>
+                </MessageContent>
+              </Message>
+            ))}
+          </CardContent>
+        </Card>
       </section>
 
-      <section className="section nav">
-        <a className="button" href={`/api/surveys/${survey.id}/export?format=json`}>
+      <section className="mb-8 flex flex-wrap gap-2">
+        <Button variant="outline" render={<a href={`/api/surveys/${survey.id}/export?format=json`} />}>
           Export JSON
-        </a>
-        <a className="button" href={`/api/surveys/${survey.id}/export?format=csv`}>
+        </Button>
+        <Button variant="outline" render={<a href={`/api/surveys/${survey.id}/export?format=csv`} />}>
           Export CSV
-        </a>
+        </Button>
       </section>
 
-      <section className="panel">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Response</th>
-              <th>Status</th>
-              <th>Summary</th>
-              <th>Quotes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {responses.map((response) => {
-              const answer = answers.find((item) => item.responseId === response.id);
-              return (
-                <tr key={response.id}>
-                  <td>{response.id}</td>
-                  <td>
-                    {response.status}
-                    {response.completionReason ? <div className="muted">{response.completionReason}</div> : null}
-                  </td>
-                  <td>{answer?.summary ?? <span className="muted">No extraction yet</span>}</td>
-                  <td>{answer?.quotes.join(" / ") ?? ""}</td>
-                </tr>
-              );
-            })}
-            {responses.length === 0 ? (
-              <tr>
-                <td colSpan={4}>
-                  <span className="muted">No responses yet.</span>
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </section>
+      <Card>
+        <CardContent className="pt-6">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Response</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Summary</TableHead>
+                <TableHead>Quotes</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {responses.map((response) => {
+                const answer = answers.find((item) => item.responseId === response.id);
+                return (
+                  <TableRow key={response.id}>
+                    <TableCell className="font-mono text-xs">{response.id}</TableCell>
+                    <TableCell>
+                      <Badge variant={response.status === "completed" ? "default" : "secondary"}>
+                        {response.status}
+                      </Badge>
+                      {response.completionReason ? (
+                        <div className="mt-1 text-xs text-muted-foreground">{response.completionReason}</div>
+                      ) : null}
+                    </TableCell>
+                    <TableCell className="max-w-xs whitespace-normal">
+                      {answer?.summary ?? <span className="text-muted-foreground">No extraction yet</span>}
+                    </TableCell>
+                    <TableCell className="max-w-xs whitespace-normal">{answer?.quotes.join(" / ") ?? ""}</TableCell>
+                  </TableRow>
+                );
+              })}
+              {responses.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    No responses yet.
+                  </TableCell>
+                </TableRow>
+              ) : null}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </AppChrome>
   );
 }

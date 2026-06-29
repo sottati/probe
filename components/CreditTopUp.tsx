@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 export function CreditTopUp() {
   const router = useRouter();
@@ -19,8 +20,8 @@ export function CreditTopUp() {
   }
 
   return (
-    <button className="button" type="button" onClick={topUp} disabled={pending}>
+    <Button variant="outline" type="button" onClick={topUp} disabled={pending}>
       {pending ? "Adding..." : "Add $10 pilot credits"}
-    </button>
+    </Button>
   );
 }

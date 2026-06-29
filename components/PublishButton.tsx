@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 export function PublishButton({ surveyId }: { surveyId: string }) {
   const router = useRouter();
@@ -15,8 +16,8 @@ export function PublishButton({ surveyId }: { surveyId: string }) {
   }
 
   return (
-    <button className="button primary" onClick={publish} disabled={pending}>
+    <Button onClick={publish} disabled={pending}>
       {pending ? "Publishing..." : "Publish"}
-    </button>
+    </Button>
   );
 }
