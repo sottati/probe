@@ -2,8 +2,10 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import type { NextFetchEvent } from "next/server";
 import { NextResponse, type NextRequest } from "next/server";
 
+const PUBLIC_EXACT = ["/"];
 const PUBLIC_PREFIXES = ["/login", "/api/auth/", "/r/", "/api/respond/", "/eve/", "/_next/", "/favicon.ico"];
 const isPublicRoute = createRouteMatcher([
+  "/",
   "/login(.*)",
   "/api/auth(.*)",
   "/r(.*)",
@@ -22,7 +24,7 @@ export function proxy(request: NextRequest, event: NextFetchEvent) {
   if (hasClerkConfig) return clerkProxy(request, event);
 
   const { pathname } = request.nextUrl;
-  if (PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+  if (PUBLIC_EXACT.includes(pathname) || PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return NextResponse.next();
   }
 
