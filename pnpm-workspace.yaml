@@ -1,0 +1,6 @@
+allowBuilds:
+  '@clerk/shared': true
+  esbuild: true
+  sharp: true
+minimumReleaseAgeExclude:
+  - eve@0.13.6
